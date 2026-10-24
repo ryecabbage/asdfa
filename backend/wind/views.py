@@ -6,7 +6,7 @@ import datetime as dt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .services import day_view
+from .services import day_view, month_summary
 
 
 @api_view(["GET"])
@@ -25,3 +25,14 @@ def day(request):
     decision_time = decision_time.astimezone(dt.timezone.utc)
 
     return Response(day_view(decision_time))
+
+
+
+@api_view(["GET"])
+def summary(request):
+    value = request.query_params.get("time", "09:00")
+    try:
+        time_of_day = dt.time.fromisoformat(value)
+    except ValueError:
+        return Response({"error": "time must look like 07:30"}, status=400)
+    return Response(month_summary(time_of_day))

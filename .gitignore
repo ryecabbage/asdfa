@@ -1,0 +1,12 @@
+.vercel/
+.env.local
+staticfiles/
+
+
+.venv/
+node_modules/
+dist/
+__pycache__/
+*.pyc
+db.sqlite3
+.env

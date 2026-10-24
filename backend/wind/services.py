@@ -38,15 +38,19 @@ def get_actuals(delivery_date):
 def compute_metrics(pairs):
     n = len(pairs)
     if n == 0:
-        return {"n": 0, "mae": None, "rmse": None, "bias": None}
+        return {"n": 0, "mae": None, "rmse": None, "bias": None, "mae_pct": None, "bias_pct": None}
     errors = [forecast - actual for forecast, actual in pairs]
+    mean_actual = sum(actual for _, actual in pairs) / n
+    mae = sum(abs(e) for e in errors) / n
+    bias = sum(errors) / n
     return {
         "n": n,
-        "mae": sum(abs(e) for e in errors) / n,
+        "mae": mae,
         "rmse": sqrt(sum(e * e for e in errors) / n),
-        "bias": sum(errors) / n,
+        "bias": bias,
+        "mae_pct": mae / mean_actual * 100 if mean_actual else None,
+        "bias_pct": bias / mean_actual * 100 if mean_actual else None,
     }
-
 
 # final function
 def day_view(decision_time):
@@ -63,8 +67,10 @@ def day_view(decision_time):
         actual_mw = actuals.get(time)
 
         error = None
+        error_pct = None
         if forecast_mw is not None and actual_mw is not None:
             error = forecast_mw - actual_mw
+            error_pct = error / actual_mw * 100 if actual_mw else None
             pairs.append((forecast_mw, actual_mw))
 
         slots.append({
@@ -73,6 +79,7 @@ def day_view(decision_time):
             "forecast": forecast_mw,
             "forecast_published": forecast.publish_time if forecast else None,
             "error": error,
+            "error_pct": error_pct,
         })
 
     return {
@@ -81,3 +88,17 @@ def day_view(decision_time):
         "slots": slots,
         "metrics": compute_metrics(pairs),
     }
+
+def month_summary(time_of_day):
+    first = dt.date(2026, 1, 1)
+    days = []
+    all_pairs = []
+
+    for i in range(31):
+        decision_time = utc(first + dt.timedelta(days=i), time_of_day)
+        view = day_view(decision_time)
+        pairs = [(s["forecast"], s["actual"]) for s in view["slots"] if s["error"] is not None]
+        all_pairs.extend(pairs)
+        days.append({"date": view["date"], **compute_metrics(pairs)})
+
+    return {"time_of_day": time_of_day, "days": days, "overall": compute_metrics(all_pairs)}

@@ -13,6 +13,11 @@ class MetricsTests(SimpleTestCase):
         self.assertEqual(metrics["bias"], -5)
         self.assertAlmostEqual(metrics["rmse"], 250 ** 0.5)
 
+    def test_percentages_are_relative_to_average_actual(self):
+        metrics = compute_metrics([(110, 100), (80, 100)])
+        self.assertAlmostEqual(metrics["mae_pct"], 15)
+        self.assertAlmostEqual(metrics["bias_pct"], -5)
+
     def test_empty(self):
         self.assertIsNone(compute_metrics([])["mae"])
 
